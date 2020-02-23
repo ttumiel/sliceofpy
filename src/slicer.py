@@ -86,18 +86,41 @@ def parse_obj(filename):
 
     return faces, vertices
 
-def generate_contours(filename, slice_width=7, scale=1):
+
+def center_vertices(vertices):
+    "Corrects any offsets in the vertices for better printing."
+    x_min,y_min,z_min = vertices.min(axis=0)
+    x_max,y_max,z_max = vertices.max(axis=0)
+    if z_min != 0:
+        print("Warning: Base height is not zero. Compensating.")
+        vertices[:,2] -= z_min
+
+    # add tolerances?
+    x_offset = (x_max + x_min)/2
+    if x_offset != 0:
+        print("Warning: X-axis is not centered. Centering.")
+        vertices[:,0] -= x_offset
+
+    y_offset = (y_max + y_min)/2
+    if y_offset != 0:
+        print("Warning: Y-axis is not centered. Centering.")
+        vertices[:,1] -= y_offset
+
+    return z_max
+
+
+def generate_contours(filename, layer_height, scale):
     "Find the contours of all the intersecting vertices"
     faces, vertices = parse_obj(filename)
+    z_max = center_vertices(vertices)
 
-    max_height = vertices.max()
-    num_slices = int(np.ceil(max_height*scale/slice_width))
+    num_slices = int(np.ceil(z_max*scale/layer_height))
     print(f"Number of slices: {num_slices}")
 
     face_qs = []
 
     for i in range(num_slices):
-        zi = i*slice_width
+        zi = i*layer_height
         face_q = FaceQueue()
 
         # Find all the vertices intersecting with this z-plane
