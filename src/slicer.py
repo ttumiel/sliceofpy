@@ -126,4 +126,32 @@ def generate_contours(filename, slice_width=7, scale=1):
 
 def generate_gcode(filename, outfile="out.gcode"):
     face_qs = generate_contours(filename)
+
+    with G(outfile=outfile) as g:
+        g.home()
+        for layer in face_qs:
+            for i, face in enumerate(layer):
+                # for the first layer, check which way to move
+                if i == 0:
+                    if all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1]):
+                        start_pt = face.contour_points[1]
+                        next_pt = face.contour_points[0]
+                    else:
+                        start_pt = face.contour_points[0]
+                        next_pt = face.contour_points[1]
+                    g.move(*start_pt)
+                    # start extruding TODO
+                else:
+                    # for the rest of the way just go to the contour pt that isn't the same as the last
     pass
+                    next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
+
+                # move the cursor
+                g.move(*next_pt)
+                last_pt = next_pt
+
+        # connect back to the start
+        g.move(*start_pt)
+
+        # stop extruding
+
