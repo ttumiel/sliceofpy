@@ -1,6 +1,9 @@
 import numpy as np
 from mecode import G
 import logging
+import matplotlib.pyplot as plt
+
+from math_utils import get_intersection, distance_between
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -15,7 +18,7 @@ class Face():
         self.contour_points.append(pt)
 
     def __str__(self):
-        return f"Face {self.face_num}: {str(self.v)}"
+        return f"Face {self.face_num}: {str(self.v)} " + ("" if len(self.contour_points) == 0 else str(self.contour_points))
 
     def __repr__(self):
         return str(self)
@@ -90,6 +93,8 @@ def parse_obj(filename):
 
     return faces, vertices
 
+def is_lower_point(vert_zs, zi):
+    return sum(vert_zs == zi) == 1 and sum(vert_zs<zi) == 0
 
 def center_vertices(vertices):
     "Corrects any offsets in the vertices for better printing."
@@ -135,7 +140,7 @@ def generate_contours(filename, layer_height, scale):
 
             lowers = current_verts[current_zs <= zi]
             uppers = current_verts[current_zs > zi]
-            if len(lowers) != 0 and len(uppers) != 0:
+            if len(lowers) != 0 and len(uppers) != 0: # and not is_lower_point(current_zs, zi):
                 # add face to list of intersected faces
                 f_class = Face(face, face_num)
                 face_q.insert(f_class)
@@ -143,9 +148,10 @@ def generate_contours(filename, layer_height, scale):
                 # process face
                 for low_vert in lowers:
                     for upp_vert in uppers:
-                        x = (zi-low_vert[2])*(upp_vert[0]-low_vert[0])/(upp_vert[2]-low_vert[2]) + low_vert[0]
-                        y = (zi-low_vert[2])*(upp_vert[1]-low_vert[1])/(upp_vert[2]-low_vert[2]) + low_vert[1]
-                        f_class.add_contour_pts(np.array([x, y, zi]))
+                        # x = (zi-low_vert[2])*(upp_vert[0]-low_vert[0])/(upp_vert[2]-low_vert[2]) + low_vert[0]
+                        # y = (zi-low_vert[2])*(upp_vert[1]-low_vert[1])/(upp_vert[2]-low_vert[2]) + low_vert[1]
+                        contour_pt = get_intersection(low_vert, upp_vert, z=zi)
+                        f_class.add_contour_pts(contour_pt)
 
         face_qs.append(face_q)
     return face_qs
@@ -179,7 +185,7 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
         for layer in face_qs:
             for i, face in enumerate(layer):
                 if i == 0:
-                # for the first layer, check which way to move
+                    # for the first layer, check which way to move
                     if len(layer) > 1 and (all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1])):
                         start_pt = face.contour_points[1]
                         next_pt = face.contour_points[0]
@@ -196,7 +202,7 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
                     next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
 
                 # calculate how much to extrude
-                distance = np.sqrt(np.sum(np.square(next_pt-last_pt)))
+                distance = distance_between(next_pt, last_pt)
                 total_distance += distance
                 extrusion_amount = extrusion_rate*distance
 
@@ -205,8 +211,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
                 total_extruded += extrusion_amount
                 last_pt = next_pt
 
-        # connect back to the start
-            distance = np.sqrt(np.sum(np.square(start_pt-last_pt)))
+            # connect back to the start
+            distance = distance_between(start_pt, last_pt)
             total_distance += distance
             extrusion_amount = extrusion_rate*distance
             g.abs_move(*start_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
