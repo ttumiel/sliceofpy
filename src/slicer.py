@@ -148,14 +148,22 @@ def generate_contours(filename, layer_height, scale):
                         f_class.add_contour_pts(np.array([x, y, zi]))
 
         face_qs.append(face_q)
-
     return face_qs
 
-def generate_gcode(filename, outfile="out.gcode"):
-    face_qs = generate_contours(filename)
+def process_gcode_template(filename, tmp_name, **kwargs):
+    "Process gcode template with necessary kwargs and write into tmp file"
+    with open(filename) as f:
+        data = f.read()
 
-    with G(outfile=outfile) as g:
-        g.home()
+    with open(tmp_name, "w") as f:
+        f.write(data.format(**kwargs))
+
+def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
+    feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4, extrusion_multiplier=1, units="mm"):
+    face_qs = generate_contours(filename, layer_height, scale)
+
+    process_gcode_template("header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate)
+    process_gcode_template("footer.gcode", "footer.tmp", feedrate=feedrate)
         for layer in face_qs:
             for i, face in enumerate(layer):
                 # for the first layer, check which way to move
@@ -170,7 +178,6 @@ def generate_gcode(filename, outfile="out.gcode"):
                     # start extruding TODO
                 else:
                     # for the rest of the way just go to the contour pt that isn't the same as the last
-    pass
                     next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
 
                 # move the cursor
