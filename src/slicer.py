@@ -1,6 +1,10 @@
 import numpy as np
 from mecode import G
+import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 class Face():
     def __init__(self, vertices, face_num):
         self.v = vertices
@@ -92,18 +96,18 @@ def center_vertices(vertices):
     x_min,y_min,z_min = vertices.min(axis=0)
     x_max,y_max,z_max = vertices.max(axis=0)
     if z_min != 0:
-        print("Warning: Base height is not zero. Compensating.")
+        logger.warning("Base height is not zero. Compensating.")
         vertices[:,2] -= z_min
 
     # add tolerances?
     x_offset = (x_max + x_min)/2
     if x_offset != 0:
-        print("Warning: X-axis is not centered. Centering.")
+        logger.warning("X-axis is not centered. Centering.")
         vertices[:,0] -= x_offset
 
     y_offset = (y_max + y_min)/2
     if y_offset != 0:
-        print("Warning: Y-axis is not centered. Centering.")
+        logger.warning("Y-axis is not centered. Centering.")
         vertices[:,1] -= y_offset
 
     return z_max
