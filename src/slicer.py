@@ -162,30 +162,68 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4, extrusion_multiplier=1, units="mm"):
     face_qs = generate_contours(filename, layer_height, scale)
 
+    feedrate_writing = feedrate_writing or feedrate//2
+    flow_area = extrusion_multiplier*extrusion_width*layer_height
+    flowrate = flow_area*feedrate_writing/60
+    logger.info(f"The flowrate is set to {flowrate}mm^3/s")
+    extrusion_rate = flow_area/(filament_diameter**2/4*np.pi)
+    total_distance, total_extruded = 0, 0
+
     process_gcode_template("header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate)
     process_gcode_template("footer.gcode", "footer.tmp", feedrate=feedrate)
+
+    # feedrate, flowrate, filament diameter
+    # filament_diameter, layer_height=0.19, extrusion_width=0.35, extrusion_multiplier=1, setup=True
+    with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp") as g:
+        g.absolute()
         for layer in face_qs:
             for i, face in enumerate(layer):
-                # for the first layer, check which way to move
                 if i == 0:
-                    if all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1]):
+                # for the first layer, check which way to move
+                    if len(layer) > 1 and (all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1])):
                         start_pt = face.contour_points[1]
                         next_pt = face.contour_points[0]
                     else:
                         start_pt = face.contour_points[0]
                         next_pt = face.contour_points[1]
-                    g.move(*start_pt)
+
+                    g.abs_move(*start_pt, rapid=True, F=feedrate)
+                    last_pt = start_pt
                     # start extruding TODO
+                    # Possibly also need to consider temperature and retracting the bit
                 else:
                     # for the rest of the way just go to the contour pt that isn't the same as the last
                     next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
 
+                # calculate how much to extrude
+                distance = np.sqrt(np.sum(np.square(next_pt-last_pt)))
+                total_distance += distance
+                extrusion_amount = extrusion_rate*distance
+
                 # move the cursor
-                g.move(*next_pt)
+                g.abs_move(*next_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
+                total_extruded += extrusion_amount
                 last_pt = next_pt
 
         # connect back to the start
-        g.move(*start_pt)
+            distance = np.sqrt(np.sum(np.square(start_pt-last_pt)))
+            total_distance += distance
+            extrusion_amount = extrusion_rate*distance
+            g.abs_move(*start_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
+            total_extruded += extrusion_amount
 
-        # stop extruding
+            # TODO: add infill
 
+        # End all commands
+        g.write("M400")
+
+        logger.info(f"Total nozzle distance: {total_distance}mm")
+        logger.info(f"Estimated filament used: {total_extruded}mm")
+        # logger.info(f"Total volume: {}mm^3")
+
+        # View output slices
+    if save_image:
+        g.view('matplotlib')
+        plt.savefig('img.jpg')
+
+    return g
