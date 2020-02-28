@@ -42,7 +42,7 @@ def fill_across_index(g, faces, index, current_val, order_axes_by, extrusion_rat
     assert len(sorted_intersections)%2 == 0, "Not even. Something's funky..."
     for i in range(0, len(sorted_intersections), 2):
         # Move to starting point
-        g.abs_move(*sorted_intersections[i])
+        g.abs_move(*sorted_intersections[i], rapid=True)
 
         # Extrude across distance
         total_distance += distance_between(sorted_intersections[i], sorted_intersections[i+1])
@@ -70,18 +70,16 @@ def solid(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, t
     "Apply a solid fill using a gap fill of size `extrusion_width`"
     return gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, gap=1)
 
-# def criss_cross(g, vertices, number_of_crosses=None, size_of_crosses=None):
-#     "Must specify either number_of_crosses or size_of_crosses but not both."
+def criss_cross(g, faces, x_min, x_max, y_min, y_max, extrusion_rate, total_extruded, total_distance, extrusion_width, number_of_crosses=None, gap_between_crosses=None):
+    """Must specify either number_of_crosses or size_of_crosses but not both.
 
-#     assert number_of_crosses is not None ^ size_of_crosses is not None
-#     # Use a global x min and global x max so that the criss crosses are
-#     # on top of each other
-#     x_min = vertices.min()
-#     x_max = vertices[].min()
-#     for current_x in range(x_min+gap, x_max, gap):
-#         fill_at_x(g, faces, current_x)
+    Note
+    Use a global coord min and max so that the criss crosses are
+    on top of each other in consecutive layers.
+    """
+    assert (number_of_crosses is not None) ^ (gap_between_crosses is not None)
+    x_gap = gap_between_crosses or (x_max-x_min)/number_of_crosses
+    y_gap = gap_between_crosses or (y_max-y_min)/number_of_crosses
 
-#     y_min = vertices.min()
-#     y_max = vertices[].min()
-#     for current_x in range(x_min+gap, x_max, gap):
-#         fill_at_x(g, faces, current_x)
+    total_distance, total_extruded =  gap_fill(g, faces, Axis.X, x_min, x_max, extrusion_rate, total_extruded, total_distance, gap=x_gap)
+    return gap_fill(g, faces, Axis.Y, y_min, y_max, extrusion_rate, total_extruded, total_distance, gap=y_gap)
