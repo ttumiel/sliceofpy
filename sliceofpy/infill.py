@@ -68,6 +68,7 @@ def gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded
 
 def solid(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, extrusion_width):
     "Apply a solid fill using a gap fill of size `extrusion_width`"
+    g.write("\n; Printing solid infill")
     return gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, gap=1)
 
 def criss_cross(g, faces, x_min, x_max, y_min, y_max, extrusion_rate, total_extruded, total_distance, extrusion_width, number_of_crosses=None, gap_between_crosses=None):
@@ -81,5 +82,7 @@ def criss_cross(g, faces, x_min, x_max, y_min, y_max, extrusion_rate, total_extr
     x_gap = gap_between_crosses or (x_max-x_min)/number_of_crosses
     y_gap = gap_between_crosses or (y_max-y_min)/number_of_crosses
 
+    g.write("\n; Printing x criss-crosses for cross infill")
     total_distance, total_extruded =  gap_fill(g, faces, Axis.X, x_min, x_max, extrusion_rate, total_extruded, total_distance, gap=x_gap)
+    g.write("\n; Printing y criss-crosses for cross infill")
     return gap_fill(g, faces, Axis.Y, y_min, y_max, extrusion_rate, total_extruded, total_distance, gap=y_gap)

@@ -178,14 +178,14 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
     process_gcode_template("header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate)
     process_gcode_template("footer.gcode", "footer.tmp", feedrate=feedrate)
 
-    # feedrate, flowrate, filament diameter
-    # filament_diameter, layer_height=0.19, extrusion_width=0.35, extrusion_multiplier=1, setup=True
     with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp") as g:
         g.absolute()
-        for layer in face_qs:
+        for layer_num, layer in enumerate(face_qs):
+            g.write(f"\n; Printing layer {layer_num}\n; ====================")
+            g.write(f"\n; Printing outline")
             for i, face in enumerate(layer):
                 if i == 0:
-                    # for the first layer, check which way to move
+                    # for the first face, check which way to move
                     if len(layer) > 1 and (all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1])):
                         start_pt = face.contour_points[1]
                         next_pt = face.contour_points[0]
