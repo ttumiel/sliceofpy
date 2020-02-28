@@ -56,7 +56,7 @@ def cli():
         "-d",
         type=float,
         default=1.75,
-        help="The diameter of FDM filament you are using",
+        help="The diameter of the filament you are using",
     )
     p.add_argument(
         "--extrusion_width",
@@ -70,7 +70,9 @@ def cli():
         type=float,
         default=1,
         help="The length of extrusion filament to be pushed through on a move"
-        "command will be multiplied by this number before being applied.",
+        "command will be multiplied by this number before being applied. Use"
+        "this to slightly adjust the flowrate. Decrease if over-extruded and"
+        "vice versa.",
     )
     p.add_argument(
         "--units",
@@ -78,6 +80,25 @@ def cli():
         default="mm",
         choices=["in", "mm"],
         help="The units to operate in. Either mm or in.",
+    )
+    p.add_argument(
+        "--misc_infill",
+        type=str,
+        default="cross",
+        choices=["cross", "solid"],
+        help="The type of infill to apply for layers before and after `num_filled` solid infill layers.",
+    )
+    p.add_argument(
+        "--num_solid_fill",
+        type=int,
+        default=3,
+        help="The number of layers that have a solid fill after the base and before the ceiling",
+    )
+    p.add_argument(
+        "--misc_infill_kwargs",
+        type=str,
+        default="{'gap_between_crosses': 3}",
+        help="The related keyword arguments for the misc infill.",
     )
 
     # TODO: wall_speed, infill_speed
@@ -95,6 +116,9 @@ def cli():
         filament_diameter=args.filament_diameter,
         extrusion_width=args.extrusion_width,
         extrusion_multiplier=args.extrusion_multiplier,
+        misc_infill=args.misc_infill,
+        misc_infill_kwargs=eval(args.misc_infill_kwargs),
+        num_solid_fill=args.num_solid_fill,
         units=args.units,
     )
 
