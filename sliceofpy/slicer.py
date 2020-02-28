@@ -167,7 +167,58 @@ def process_gcode_template(filename, tmp_name, **kwargs):
 
 def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4,
-    extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={}, num_solid_fill=3, units="mm"):
+    extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={'gap_between_crosses': 5}, num_solid_fill=3, units="mm"):
+    """
+    Generate G-code from an `.obj` file.
+
+    Arguments
+
+    filename (str)
+        The name of the input .obj file.
+    outfile (str)
+        The name of the output file.
+        Default: out.gcode
+    layer_height (float)
+        The height of the layers when printing.
+        Default: 0.2
+    scale (float)
+        Scale the entire model by a constant factor.
+        Default: 1
+    save_image (bool)
+        Save an image of the nozzle path that will be executed.
+        Default: False
+    feedrate (float)
+        The maximum speed at which the printer head should move.
+        (mm/min)
+        Default: 3600
+    feedrate_writing (float)
+        The speed at which the printer head should move when
+        printing. (mm/min)
+        Default: feedrate/2
+    filament_diameter (float)
+        The diameter of the filament in units (mm by default)
+        Default: 1.75
+    extrusion_width (float)
+        The desired width of the printed extrusion.
+        Default: 0.4
+    extrusion_multiplier (float)
+        A constant multiplier to adjust the extrusion rate.
+        Default: 1
+    misc_infill (str)
+        The type of infill pattern for layers that are not on the
+        top or the bottom. One of ["cross", "solid", "none"].
+        Default: "cross"
+    misc_infill_kwargs (dict)
+        Miscellaneous keyword arguments to the misc_infill.
+        Default: {'gap_between_crosses': 5}
+    num_solid_fill (int)
+        The number of solid infill layers at the top and bottom
+        of the object.
+        Default: 3
+    units (str)
+        The units to operate in. One of ["mm", "in"].
+        Default: "mm"
+    """
     face_qs, vertices = generate_contours(filename, layer_height, scale)
 
     feedrate_writing = feedrate_writing or feedrate//2
