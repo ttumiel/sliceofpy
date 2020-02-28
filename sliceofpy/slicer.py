@@ -4,6 +4,7 @@ import logging
 import matplotlib.pyplot as plt
 
 from math_utils import get_intersection, distance_between
+from infill import solid, gap_fill, Axis
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -103,6 +104,7 @@ def center_vertices(vertices):
     if z_min != 0:
         logger.warning("Base height is not zero. Compensating.")
         vertices[:,2] -= z_min
+        z_max -= z_min
 
     # add tolerances?
     x_offset = (x_max + x_min)/2
@@ -148,13 +150,11 @@ def generate_contours(filename, layer_height, scale):
                 # process face
                 for low_vert in lowers:
                     for upp_vert in uppers:
-                        # x = (zi-low_vert[2])*(upp_vert[0]-low_vert[0])/(upp_vert[2]-low_vert[2]) + low_vert[0]
-                        # y = (zi-low_vert[2])*(upp_vert[1]-low_vert[1])/(upp_vert[2]-low_vert[2]) + low_vert[1]
                         contour_pt = get_intersection(low_vert, upp_vert, z=zi)
                         f_class.add_contour_pts(contour_pt)
 
         face_qs.append(face_q)
-    return face_qs
+    return face_qs, vertices
 
 def process_gcode_template(filename, tmp_name, **kwargs):
     "Process gcode template with necessary kwargs and write into tmp file"
@@ -166,7 +166,7 @@ def process_gcode_template(filename, tmp_name, **kwargs):
 
 def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4, extrusion_multiplier=1, units="mm"):
-    face_qs = generate_contours(filename, layer_height, scale)
+    face_qs, vertices = generate_contours(filename, layer_height, scale)
 
     feedrate_writing = feedrate_writing or feedrate//2
     flow_area = extrusion_multiplier*extrusion_width*layer_height
@@ -195,8 +195,6 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
 
                     g.abs_move(*start_pt, rapid=True, F=feedrate)
                     last_pt = start_pt
-                    # start extruding TODO
-                    # Possibly also need to consider temperature and retracting the bit
                 else:
                     # for the rest of the way just go to the contour pt that isn't the same as the last
                     next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
@@ -218,7 +216,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
             g.abs_move(*start_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
             total_extruded += extrusion_amount
 
-            # TODO: add infill
+            # Add infill
+            total_distance, total_extruded = solid(g, layer, Axis.X, vertices[:, 0].min().item(), vertices[:, 0].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
 
         # End all commands
         g.write("M400")
