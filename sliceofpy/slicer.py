@@ -4,11 +4,12 @@ import logging
 import matplotlib.pyplot as plt
 
 from math_utils import get_intersection, distance_between
-from infill import solid, gap_fill, Axis
+from infill import solid, criss_cross, gap_fill, Axis, check_layer_above
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
+
 class Face():
     def __init__(self, vertices, face_num):
         self.v = vertices
@@ -165,7 +166,8 @@ def process_gcode_template(filename, tmp_name, **kwargs):
         f.write(data.format(**kwargs))
 
 def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
-    feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4, extrusion_multiplier=1, units="mm"):
+    feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4,
+    extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={}, num_solid_fill=3, units="mm"):
     face_qs, vertices = generate_contours(filename, layer_height, scale)
 
     feedrate_writing = feedrate_writing or feedrate//2

@@ -85,7 +85,7 @@ def cli():
         "--misc_infill",
         type=str,
         default="cross",
-        choices=["cross", "solid"],
+        choices=["cross", "solid", "none"],
         help="The type of infill to apply for layers before and after `num_filled` solid infill layers.",
     )
     p.add_argument(
@@ -97,7 +97,7 @@ def cli():
     p.add_argument(
         "--misc_infill_kwargs",
         type=str,
-        default="{'gap_between_crosses': 3}",
+        default="{'gap_between_crosses': 5}",
         help="The related keyword arguments for the misc infill.",
     )
 
