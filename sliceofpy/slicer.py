@@ -10,6 +10,17 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
+material_nozzle_temps = {
+    "PLA": 215,
+    "ABS": 235,
+}
+
+material_bed_temps = {
+    "PLA": 60,
+    "ABS": 100,
+}
+
+
 class Face():
     def __init__(self, vertices, face_num):
         self.v = vertices
@@ -165,9 +176,18 @@ def process_gcode_template(filename, tmp_name, **kwargs):
     with open(tmp_name, "w") as f:
         f.write(data.format(**kwargs))
 
+def process_temp(temp, lookup):
+    if isinstance(temp, (float,int)) or temp.isdigit():
+        return float(temp)
+    elif temp.upper() in lookup:
+        return lookup[temp.upper()]
+    else:
+        raise ValueError("Temperature not recognized")
+
 def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4,
-    extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={'gap_between_crosses': 5}, num_solid_fill=3, units="mm"):
+    extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={'gap_between_crosses': 5},
+    num_solid_fill=3, temperature="PLA", bed_temperature="PLA", units="mm"):
     """
     Generate G-code from an `.obj` file.
 
@@ -215,6 +235,16 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
         The number of solid infill layers at the top and bottom
         of the object.
         Default: 3
+    temperature (str or float)
+        The temperature of the printer head in degrees celsius.
+        Either a float or use a default temperature value from
+        ["PLA", "ABS"]
+        Default: PLA
+    bed_temperature (str or float)
+        The temperature of the printer bed in degrees celsius.
+        Either a float or use a default temperature value from
+        ["PLA", "ABS"]
+        Default: PLA
     units (str)
         The units to operate in. One of ["mm", "in"].
         Default: "mm"
@@ -224,12 +254,18 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
     feedrate_writing = feedrate_writing or feedrate//2
     flow_area = extrusion_multiplier*extrusion_width*layer_height
     flowrate = flow_area*feedrate_writing/60
-    logger.info(f"The flowrate is set to {flowrate}mm^3/s")
     extrusion_rate = flow_area/(filament_diameter**2/4*np.pi)
+    logger.info(f"The flowrate is set to {flowrate}mm^3/s")
+
+    nozzle_temp = process_temp(temperature, material_nozzle_temps)
+    bed_temp = process_temp(bed_temperature, material_bed_temps)
+    logger.info(f"The nozzle temperature is set to {nozzle_temp} degrees celsius")
+    logger.info(f"The bed temperature is set to {bed_temp} degrees celsius")
+
     total_distance, total_extruded = 0, 0
 
-    process_gcode_template("header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate)
-    process_gcode_template("footer.gcode", "footer.tmp", feedrate=feedrate)
+    process_gcode_template("templates/header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate, temperature=nozzle_temp, bed_temperature=bed_temp)
+    process_gcode_template("templates/footer.gcode", "footer.tmp", feedrate=feedrate)
 
     with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp") as g:
         g.absolute()

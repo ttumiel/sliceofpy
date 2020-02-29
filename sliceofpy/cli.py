@@ -95,6 +95,19 @@ def cli():
         help="The number of layers that have a solid fill after the base and before the ceiling",
     )
     p.add_argument(
+        "--temperature",
+        "-t",
+        type=str,
+        default="PLA",
+        help="The temperature of the printer head in degrees celsius",
+    )
+    p.add_argument(
+        "--bed_temperature",
+        type=str,
+        default="PLA",
+        help="The temperature of the printer bed in degrees celsius",
+    )
+    p.add_argument(
         "--misc_infill_kwargs",
         type=str,
         default="{'gap_between_crosses': 5}",
@@ -119,6 +132,8 @@ def cli():
         misc_infill=args.misc_infill,
         misc_infill_kwargs=eval(args.misc_infill_kwargs),
         num_solid_fill=args.num_solid_fill,
+        temperature=args.temperature,
+        bed_temperature=args.bed_temperature,
         units=args.units,
     )
 
