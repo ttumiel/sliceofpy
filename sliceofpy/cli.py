@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from slicer import generate_gcode
+from .slicer import generate_gcode
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

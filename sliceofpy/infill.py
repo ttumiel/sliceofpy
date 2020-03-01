@@ -1,7 +1,7 @@
 import numpy as np
 from enum import IntEnum
 
-from math_utils import get_intersection, distance_between
+from .math_utils import get_intersection, distance_between
 
 class Axis(IntEnum):
     X = 0

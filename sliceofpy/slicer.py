@@ -1,10 +1,10 @@
 import numpy as np
 from mecode import G
-import logging
+import logging, os
 import matplotlib.pyplot as plt
 
-from math_utils import get_intersection, distance_between
-from infill import solid, criss_cross, gap_fill, Axis, check_layer_above
+from .math_utils import get_intersection, distance_between
+from .infill import solid, criss_cross, gap_fill, Axis, check_layer_above
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -19,6 +19,8 @@ material_bed_temps = {
     "PLA": 60,
     "ABS": 100,
 }
+
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
 class Face():
@@ -170,7 +172,8 @@ def generate_contours(filename, layer_height, scale):
 
 def process_gcode_template(filename, tmp_name, **kwargs):
     "Process gcode template with necessary kwargs and write into tmp file"
-    with open(filename) as f:
+    fn = os.path.join(__location__, filename)
+    with open(fn) as f:
         data = f.read()
 
     with open(tmp_name, "w") as f:
@@ -264,8 +267,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
 
     total_distance, total_extruded = 0, 0
 
-    process_gcode_template("templates/header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate, temperature=nozzle_temp, bed_temperature=bed_temp)
-    process_gcode_template("templates/footer.gcode", "footer.tmp", feedrate=feedrate)
+    process_gcode_template("./templates/header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate, temperature=nozzle_temp, bed_temperature=bed_temp)
+    process_gcode_template("./templates/footer.gcode", "footer.tmp", feedrate=feedrate)
 
     with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp") as g:
         g.absolute()
