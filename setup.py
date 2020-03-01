@@ -13,6 +13,9 @@ setup(
     keywords = "3D slicer",
     packages=['sliceofpy'],
     long_description=read('README.md'),
+    entry_points = {
+        'console_scripts': ['sliceofpy=sliceofpy.cli:cli'],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
