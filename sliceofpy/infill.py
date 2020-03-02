@@ -33,6 +33,8 @@ def get_intersections(faces, coord_val, index):
 def fill_across_index(g, faces, index, current_val, order_axes_by, extrusion_rate, total_extruded, total_distance):
     "Fills a polygon across `index` in G-code"
     faces_at_val = find_faces_at_index(faces, current_val, index)
+    if len(faces_at_val) == 0:
+        return total_distance, total_extruded
     intersections = get_intersections(faces_at_val, current_val, index)
 
     # Sort by the correct index/axis
