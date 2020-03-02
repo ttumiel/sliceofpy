@@ -309,10 +309,12 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
             total_extruded += extrusion_amount
 
             # Add infill
-            total_distance, total_extruded = solid(g, layer, Axis.X, vertices[:, 0].min().item(), vertices[:, 0].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
-
-        # End all commands
-        g.write("M400")
+            if layer_num < num_solid_fill or layer_num >= len(face_qs) - num_solid_fill or misc_infill == "solid":
+                # TODO: remove global minima for the axis and start at the layer min/max
+                axis = Axis.X if layer_num % 2 == 0 else Axis.Y
+                total_distance, total_extruded = solid(g, layer, axis, vertices[:, axis].min().item(), vertices[:, axis].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
+            elif misc_infill == "cross":
+                total_distance, total_extruded = criss_cross(g, layer, vertices[:, Axis.X].min().item(), vertices[:, Axis.X].max().item(), vertices[:, Axis.Y].min().item(), vertices[:, Axis.Y].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width, **misc_infill_kwargs)
 
         logger.info(f"Total nozzle distance: {total_distance}mm")
         logger.info(f"Estimated filament used: {total_extruded}mm")
@@ -321,6 +323,7 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
         # View output slices
     if save_image:
         g.view('matplotlib')
-        plt.savefig('img.jpg')
+        plt.show(block=True)
+        # plt.savefig('img.jpg')
 
     return g
