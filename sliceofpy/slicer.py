@@ -4,7 +4,7 @@ import logging, os
 import matplotlib.pyplot as plt
 
 from .math_utils import get_intersection, distance_between
-from .infill import solid, criss_cross, gap_fill, Axis, check_layer_above
+from .infill import solid, criss_cross, gap_fill, Axis
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -309,7 +309,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
             total_extruded += extrusion_amount
 
             # Add infill
-            if layer_num < num_solid_fill or layer_num >= len(face_qs) - num_solid_fill or misc_infill == "solid":
+            # TODO: check if the layer above is smaller and add infill
+            if layer_num < num_solid_fill or layer_num >= len(face_qs) - num_solid_fill or misc_infill == "solid" or (layer_num != len(face_qs)-1 and check_layer_above(layer, face_qs[layer_num+1])):
                 # TODO: remove global minima for the axis and start at the layer min/max
                 axis = Axis.X if layer_num % 2 == 0 else Axis.Y
                 total_distance, total_extruded = solid(g, layer, axis, vertices[:, axis].min().item(), vertices[:, axis].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
