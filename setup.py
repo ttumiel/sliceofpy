@@ -16,6 +16,12 @@ setup(
     entry_points = {
         'console_scripts': ['sliceofpy=sliceofpy.cli:cli'],
     },
+    install_requires=[
+        'numpy',
+        'matplotlib',
+        'mecode',
+        'mayavi'
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
