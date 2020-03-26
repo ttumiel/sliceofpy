@@ -111,7 +111,7 @@ def parse_obj(filename):
 def is_lower_point(vert_zs, zi):
     return sum(vert_zs == zi) == 1 and sum(vert_zs<zi) == 0
 
-def center_vertices(vertices):
+def center_vertices(vertices, base_offset):
     "Corrects any offsets in the vertices for better printing."
     x_min,y_min,z_min = vertices.min(axis=0)
     x_max,y_max,z_max = vertices.max(axis=0)
@@ -119,6 +119,9 @@ def center_vertices(vertices):
         logger.warning("Base height is not zero. Compensating.")
         vertices[:,2] -= z_min
         z_max -= z_min
+
+    vertices[:,2] += base_offset
+    z_max += base_offset
 
     # add tolerances?
     x_offset = (x_max + x_min)/2
@@ -134,10 +137,10 @@ def center_vertices(vertices):
     return z_max
 
 
-def generate_contours(filename, layer_height, scale):
+def generate_contours(filename, layer_height, scale, base_offset):
     "Find the contours of all the intersecting vertices"
     faces, vertices = parse_obj(filename)
-    z_max = center_vertices(vertices)
+    z_max = center_vertices(vertices, base_offset)
 
     num_slices = int(np.ceil(z_max*scale/layer_height))
     print(f"Number of slices: {num_slices}")
@@ -145,7 +148,7 @@ def generate_contours(filename, layer_height, scale):
     face_qs = []
 
     for i in range(num_slices):
-        zi = i*layer_height
+        zi = i*layer_height + base_offset
         face_q = FaceQueue()
 
         # Find all the vertices intersecting with this z-plane
@@ -190,7 +193,7 @@ def process_temp(temp, lookup):
 def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4,
     extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={'gap_between_crosses': 5},
-    num_solid_fill=3, temperature="PLA", bed_temperature="PLA", units="mm"):
+    num_solid_fill=3, temperature="PLA", bed_temperature="PLA", units="mm", base_offset=0.1):
     """
     Generate G-code from an `.obj` file.
 
@@ -252,7 +255,7 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
         The units to operate in. One of ["mm", "in"].
         Default: "mm"
     """
-    face_qs, vertices = generate_contours(filename, layer_height, scale)
+    face_qs, vertices = generate_contours(filename, layer_height, scale, base_offset)
 
     feedrate_writing = feedrate_writing or feedrate//2
     flow_area = extrusion_multiplier*extrusion_width*layer_height

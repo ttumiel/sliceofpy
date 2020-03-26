@@ -113,6 +113,12 @@ def cli():
         default="{'gap_between_crosses': 5}",
         help="The related keyword arguments for the misc infill.",
     )
+    p.add_argument(
+        "--base_offset",
+        type=str,
+        default="args.layer_height/2",
+        help="Offset the base of the design so that the nozzle does not hit the bed.",
+    )
 
     # TODO: wall_speed, infill_speed
 
@@ -135,6 +141,7 @@ def cli():
         temperature=args.temperature,
         bed_temperature=args.bed_temperature,
         units=args.units,
+        base_offset=eval(args.base_offset),
     )
 
 
