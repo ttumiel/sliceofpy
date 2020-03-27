@@ -47,6 +47,7 @@ class FaceQueue():
         return sum(f in face.v for f in self.q[-1].v)
 
     def insert(self, face):
+        "Returns True when the contour is complete"
         if len(self.q) == 0:
             self.q.append(face)
         else:
@@ -109,6 +110,7 @@ def parse_obj(filename):
     return faces, vertices
 
 def is_lower_point(vert_zs, zi):
+    "UNUSED: Meant to check if only a single point touches the contour (and thus should be ignored)"
     return sum(vert_zs == zi) == 1 and sum(vert_zs<zi) == 0
 
 def center_vertices(vertices, base_offset):
@@ -183,6 +185,7 @@ def process_gcode_template(filename, tmp_name, **kwargs):
         f.write(data.format(**kwargs))
 
 def process_temp(temp, lookup):
+    "Process a temperature input to a value in degrees celsius."
     if isinstance(temp, (float,int)) or temp.isdigit():
         return float(temp)
     elif temp.upper() in lookup:

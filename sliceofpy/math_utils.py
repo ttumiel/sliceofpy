@@ -1,7 +1,7 @@
 import numpy as np
 
 def get_intersection(c1, c2, **kwargs):
-    "Calculate the intersection of a line between c1 and c1 and the given x, y or z coord."
+    "Calculate the intersection of the lines c1 and c2, given x, y or z coord."
     if 'x' in kwargs:
         x = kwargs['x']
         y = (x-c1[0])*(c2[1]-c1[1])/(c2[0]-c1[0]) + c1[1]
