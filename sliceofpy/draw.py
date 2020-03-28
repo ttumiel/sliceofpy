@@ -34,14 +34,7 @@ class G():
 
     def move(self, x=None, y=None, z=None, rapid=False, **kwargs):
         if self.Z != z:
-            if len(self.tmp_cnt)>0:
-                self.tmp_layer.append(np.array(self.tmp_cnt))
-
-            if len(self.tmp_layer)>0:
-                self.continuous_extrusions.append(self.tmp_layer)
-
-            self.tmp_layer = []
-            self.tmp_cnt = []
+            self.check_tmps()
 
         if rapid == False:
             if self.stored_fast is not None and len(self.tmp_cnt) == 0:
@@ -66,6 +59,17 @@ class G():
     def __getattr__(self, name):
         return getattr(self.g, name)
 
+    def check_tmps(self):
+        "Empties the temporary layer variables by adding them to the `continuous_extrusions`"
+        if len(self.tmp_cnt)>0:
+            self.tmp_layer.append(np.array(self.tmp_cnt))
+
+        if len(self.tmp_layer)>0:
+            self.continuous_extrusions.append(self.tmp_layer)
+
+        self.tmp_layer = []
+        self.tmp_cnt = []
+
     def plot3d(self, show_all=False):
         """
         Plot the Gecode that will be printed.
@@ -76,6 +80,8 @@ class G():
             Show the extra movement lines in-between extrusion.
             Default: False
         """
+        self.check_tmps()
+
         if show_all:
             self.g.view()
         else:
@@ -109,6 +115,8 @@ class G():
         """
         import matplotlib as mp
         import matplotlib.pyplot as plt
+
+        self.check_tmps()
 
         f,ax = plt.subplots(1,2, gridspec_kw={'width_ratios': [6, 1]})
         min_lim, max_lim = min(self.x_min,self.y_min), max(self.x_max, self.y_max)
