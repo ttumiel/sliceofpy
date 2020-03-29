@@ -1,10 +1,10 @@
 import numpy as np
-from mecode import G
 import logging, os
 import matplotlib.pyplot as plt
 
 from .math_utils import get_intersection, distance_between
-from .infill import solid, criss_cross, gap_fill, Axis
+from .infill import solid, criss_cross, gap_fill, Axis, check_layer_above
+from .draw import G
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -276,7 +276,7 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
     process_gcode_template("./templates/header.gcode", "header.tmp", units=("0 \t\t\t\t\t;use inches" if units=="in" else "1 \t\t\t\t\t;use mm"), feedrate=feedrate, temperature=nozzle_temp, bed_temperature=bed_temp)
     process_gcode_template("./templates/footer.gcode", "footer.tmp", feedrate=feedrate)
 
-    with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp") as g:
+    with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp", vertices=vertices) as g:
         g.absolute()
         for layer_num, layer in enumerate(face_qs):
             g.write(f"\n; Printing layer {layer_num}\n; ====================")
