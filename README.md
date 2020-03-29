@@ -1,5 +1,7 @@
 # sliceofpy: 3D Object Slicing
 
+[![Build Status](https://travis-ci.org/ttumiel/sliceofpy.svg?branch=master)](https://travis-ci.org/ttumiel/sliceofpy)
+
 A command line 3D object slicer. Easily understandable, pretty configurable.
 
 ## Install
