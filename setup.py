@@ -19,8 +19,7 @@ setup(
     install_requires=[
         'numpy',
         'matplotlib',
-        'mecode',
-        'mayavi'
+        'mecode'
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
