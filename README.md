@@ -23,14 +23,15 @@ For more info on any of the commands, type `sliceofpy -h`.
 ## Limitations
 
 - The slicer does not generate supports for unsupported areas.
-- The slicer cannot handle holes inside of an object.
+- There are probably some unsupported edge cases I haven't thought of.
 
 I will gladly accept any contributions.
 
 ## Benefits
 
-- The slicer is fairly easy to understand (~700 LOC)
+- The slicer is fairly easy to understand (~800 LOC)
 - The slicer is pretty configurable both from the command line and if you imported it as a function.
+- You can plot the result of the slicing in 3D (with or without intermediate movements) or in 2D with a slider for the slices along the z-axis.
 
 ## How it was made
 
