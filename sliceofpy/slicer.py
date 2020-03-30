@@ -142,6 +142,11 @@ def center_vertices(vertices, base_offset):
         logger.warning("Y-axis is not centered. Centering.")
         vertices[:,1] -= y_offset
 
+    x_min,y_min,z_min = vertices.min(axis=0)
+    x_max,y_max,z_max = vertices.max(axis=0)
+
+    logger.info(f"Dimensions: X:({x_min},{x_max}) Y:({y_min},{y_max}) Z:({z_min},{z_max})")
+
     return z_max
 
 
@@ -150,8 +155,8 @@ def generate_contours(filename, layer_height, scale, base_offset):
     faces, vertices = parse_obj(filename)
     z_max = center_vertices(vertices, base_offset)
 
-    num_slices = int(np.ceil(z_max*scale/layer_height))
-    print(f"Number of slices: {num_slices}")
+    num_slices = int(np.ceil((z_max-base_offset)*scale/layer_height))
+    logger.info(f"Number of slices: {num_slices}")
 
     face_qs = []
 
