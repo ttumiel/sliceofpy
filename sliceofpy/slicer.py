@@ -257,6 +257,10 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
     units (str)
         The units to operate in. One of ["mm", "in"].
         Default: "mm"
+    base_offset (float)
+        Offset the base of the design from z=0 so that the
+        printer head prints smoothly.
+        Default: 0.1
     """
     face_qs, vertices = generate_contours(filename, layer_height, scale, base_offset)
 
