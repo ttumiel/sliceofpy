@@ -8,19 +8,19 @@ class Axis(IntEnum):
     Y = 1
     Z = 2
 
-def find_faces_at_index(faces, coord_val, index):
+def find_faces_at_index(layer_qs, coord_val, index):
     """Find all the faces that intersect `coord_val` along `index`
 
     Example
     Slice a list of faces along the x-axis so that you can tell
     where to fill the shape in, by drawing lines across the polygon.
     """
-    return [face for face in faces
+    return [face for face_q in layer_qs for face in face_q
         if ((face.contour_points[0][index] > coord_val and face.contour_points[1][index] <= coord_val) or
             (face.contour_points[1][index] > coord_val and face.contour_points[0][index] <= coord_val))]
 
 def get_intersections(faces, coord_val, index):
-    "Get the intersections between a list of faces at a particular `coord_val` along `index`"
+    "Get the intersections between a list of face queues at a particular `coord_val` along `index`"
     # Does z even make sense?
     if index == Axis.X:
         coord = {"x": coord_val}
@@ -30,18 +30,22 @@ def get_intersections(faces, coord_val, index):
         coord = {"z": coord_val}
     return np.stack([get_intersection(face.contour_points[0], face.contour_points[1], **coord) for face in faces])
 
-def fill_across_index(g, faces, index, current_val, order_axes_by, extrusion_rate, total_extruded, total_distance):
+def fill_across_index(g, layer_qs, index, current_val, order_axes_by, extrusion_rate, total_extruded, total_distance):
     "Fills a polygon across `index` in G-code"
-    faces_at_val = find_faces_at_index(faces, current_val, index)
+    faces_at_val = find_faces_at_index(layer_qs, current_val, index)
     if len(faces_at_val) == 0:
         return total_distance, total_extruded
+
     intersections = get_intersections(faces_at_val, current_val, index)
+    intersections = np.unique(intersections, axis=0)
+    if len(intersections) == 1:
+        return total_distance, total_extruded
 
     # Sort by the correct index/axis
     idxs = np.argsort(intersections[:, order_axes_by])
     sorted_intersections = intersections[idxs]
 
-    assert len(sorted_intersections)%2 == 0, "Not even. Something's funky..."
+    assert len(sorted_intersections)%2 == 0, f"len(intersections)={len(intersections)} should be even but isn't. Something's funky..."
     for i in range(0, len(sorted_intersections), 2):
         # Move to starting point
         g.abs_move(*sorted_intersections[i], rapid=True)
@@ -54,7 +58,7 @@ def fill_across_index(g, faces, index, current_val, order_axes_by, extrusion_rat
     return total_distance, total_extruded
 
 
-def gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, n_fill_lines=None, gap=None):
+def gap_fill(g, layer_qs, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, n_fill_lines=None, gap=None):
     """Fill a polygon with a gap in between the lines that fill it.
 
     The gap has a size of either `gap` or is evenly divided by `n_fill_lines`
@@ -64,16 +68,16 @@ def gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded
     order_axes_by = (index+1)%2
 
     for current_val in np.arange(start_val+gap, end_val, gap):
-        total_distance, total_extruded = fill_across_index(g, faces, index, current_val, order_axes_by, extrusion_rate, total_extruded, total_distance)
+        total_distance, total_extruded = fill_across_index(g, layer_qs, index, current_val, order_axes_by, extrusion_rate, total_extruded, total_distance)
 
     return total_distance, total_extruded
 
-def solid(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, extrusion_width):
+def solid(g, layer_qs, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, extrusion_width):
     "Apply a solid fill using a gap fill of size `extrusion_width`"
     g.write("\n; Printing solid infill")
-    return gap_fill(g, faces, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, gap=1)
+    return gap_fill(g, layer_qs, index, start_val, end_val, extrusion_rate, total_extruded, total_distance, gap=1)
 
-def criss_cross(g, faces, x_min, x_max, y_min, y_max, extrusion_rate, total_extruded, total_distance, extrusion_width, number_of_crosses=None, gap_between_crosses=None):
+def criss_cross(g, layer_qs, x_min, x_max, y_min, y_max, extrusion_rate, total_extruded, total_distance, extrusion_width, number_of_crosses=None, gap_between_crosses=None):
     """Must specify either number_of_crosses or size_of_crosses but not both.
 
     Note
@@ -85,6 +89,6 @@ def criss_cross(g, faces, x_min, x_max, y_min, y_max, extrusion_rate, total_extr
     y_gap = gap_between_crosses or (y_max-y_min)/number_of_crosses
 
     g.write("\n; Printing x criss-crosses for cross infill")
-    total_distance, total_extruded =  gap_fill(g, faces, Axis.X, x_min, x_max, extrusion_rate, total_extruded, total_distance, gap=x_gap)
+    total_distance, total_extruded =  gap_fill(g, layer_qs, Axis.X, x_min, x_max, extrusion_rate, total_extruded, total_distance, gap=x_gap)
     g.write("\n; Printing y criss-crosses for cross infill")
-    return gap_fill(g, faces, Axis.Y, y_min, y_max, extrusion_rate, total_extruded, total_distance, gap=y_gap)
+    return gap_fill(g, layer_qs, Axis.Y, y_min, y_max, extrusion_rate, total_extruded, total_distance, gap=y_gap)

@@ -348,9 +348,9 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
             if layer_num < num_solid_fill or layer_num >= len(face_qs) - num_solid_fill or misc_infill == "solid": # or (layer_num != len(face_qs)-1 and check_layer_above(layer, face_qs[layer_num+1])):
                 # TODO: remove global minima for the axis and start at the layer min/max
                 axis = Axis.X if layer_num % 2 == 0 else Axis.Y
-                total_distance, total_extruded = solid(g, layer, axis, vertices[:, axis].min().item(), vertices[:, axis].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
+                total_distance, total_extruded = solid(g, layer_qs, axis, vertices[:, axis].min().item(), vertices[:, axis].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width)
             elif misc_infill == "cross":
-                total_distance, total_extruded = criss_cross(g, layer, vertices[:, Axis.X].min().item(), vertices[:, Axis.X].max().item(), vertices[:, Axis.Y].min().item(), vertices[:, Axis.Y].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width, **misc_infill_kwargs)
+                total_distance, total_extruded = criss_cross(g, layer_qs, vertices[:, Axis.X].min().item(), vertices[:, Axis.X].max().item(), vertices[:, Axis.Y].min().item(), vertices[:, Axis.Y].max().item(), extrusion_rate, total_extruded, total_distance, extrusion_width, **misc_infill_kwargs)
 
         logger.info(f"Total nozzle distance: {total_distance}mm")
         logger.info(f"Estimated filament used: {total_extruded}mm")
