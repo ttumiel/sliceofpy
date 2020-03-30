@@ -46,18 +46,22 @@ class FaceQueue():
     def get_matches(self, face):
         return sum(f in face.v for f in self.q[-1].v)
 
+    def check_closed(self):
+        "Checks if the contour is closed."
+        return len(self)>2 and self.get_matches(self.q[0]) == 2
+
     def insert(self, face):
         "Returns True when the contour is complete"
         if len(self.q) == 0:
             self.q.append(face)
         else:
             matches = self.get_matches(face)
-            if matches >= 2:
-                # actually doesn't matter which side to put on, as
-                # long as its consistent
-                self.q.append(face)
-            else:
+            if matches < 2:
+                # Push to store if fewer than 2 vertices match
                 self.store.append(face)
+            elif matches ==2:
+                # Append to q if there is one edge match
+                self.q.append(face)
 
             if len(self.store) > 0:
                 added_from_store = False
@@ -73,6 +77,8 @@ class FaceQueue():
                         added_from_store = False
                     else:
                         break
+
+        return self.check_closed()
 
     def __len__(self):
         return len(self.q)
@@ -151,7 +157,9 @@ def generate_contours(filename, layer_height, scale, base_offset):
 
     for i in range(num_slices):
         zi = i*layer_height + base_offset
+        layer_fqs = []
         face_q = FaceQueue()
+        layer_fqs.append(face_q)
 
         # Find all the vertices intersecting with this z-plane
         # Then generate contours
@@ -164,7 +172,6 @@ def generate_contours(filename, layer_height, scale, base_offset):
             if len(lowers) != 0 and len(uppers) != 0: # and not is_lower_point(current_zs, zi):
                 # add face to list of intersected faces
                 f_class = Face(face, face_num)
-                face_q.insert(f_class)
 
                 # process face
                 for low_vert in lowers:
@@ -172,7 +179,22 @@ def generate_contours(filename, layer_height, scale, base_offset):
                         contour_pt = get_intersection(low_vert, upp_vert, z=zi)
                         f_class.add_contour_pts(contour_pt)
 
-        face_qs.append(face_q)
+                isFqFull = face_q.insert(f_class)
+
+                # Push all the remaining stored faces into a new FaceQueue
+                if isFqFull and ((len(face_q.store) > 0) or (face_num < len(faces)-1)):
+                    extra_face_q = FaceQueue()
+                    for f in face_q.store:
+                        extra_face_q.insert(f)
+
+                    face_q.store = []
+                    face_q = extra_face_q
+                    layer_fqs.append(face_q)
+                elif face_num == len(faces)-1:
+                    layer_fqs.append(face_q)
+
+        face_qs.append(layer_fqs)
+
     return face_qs, vertices
 
 def process_gcode_template(filename, tmp_name, **kwargs):
@@ -282,9 +304,12 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
 
     with G(outfile=outfile, filament_diameter=filament_diameter, layer_height=layer_height, header="header.tmp", footer="footer.tmp", vertices=vertices) as g:
         g.absolute()
-        for layer_num, layer in enumerate(face_qs):
+        for layer_num, layer_qs in enumerate(face_qs):
             g.write(f"\n; Printing layer {layer_num}\n; ====================")
             g.write(f"\n; Printing outline")
+
+            # TODO: Rename `layer` -> `contour`?
+            for layer in layer_qs:
             for i, face in enumerate(layer):
                 if i == 0:
                     # for the first face, check which way to move
