@@ -34,7 +34,7 @@ def cli():
         help="Scale all object values by this number",
     )
     p.add_argument(
-        "--save_image",
+        "--plot_slices",
         action="store_true",
         help="Save an image of the final extrusion path to out.jpg",
     )
@@ -129,7 +129,7 @@ def cli():
         outfile=args.output,
         layer_height=args.layer_height,
         scale=args.scale,
-        save_image=args.save_image,
+        plot_slices=args.plot_slices,
         feedrate=args.feedrate,
         feedrate_writing=args.feedrate_writing,
         filament_diameter=args.filament_diameter,

@@ -220,7 +220,7 @@ def process_temp(temp, lookup):
     else:
         raise ValueError("Temperature not recognized")
 
-def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, save_image=False,
+def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, plot_slices=False,
     feedrate=3600, feedrate_writing=None, filament_diameter=1.75, extrusion_width=0.4,
     extrusion_multiplier=1, misc_infill="cross", misc_infill_kwargs={'gap_between_crosses': 5},
     num_solid_fill=3, temperature="PLA", bed_temperature="PLA", units="mm", base_offset=0.1):
@@ -315,38 +315,38 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
 
             # TODO: Rename `layer` -> `contour`?
             for layer in layer_qs:
-            for i, face in enumerate(layer):
-                if i == 0:
-                    # for the first face, check which way to move
-                    if len(layer) > 1 and (all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1])):
-                        start_pt = face.contour_points[1]
-                        next_pt = face.contour_points[0]
+                for i, face in enumerate(layer):
+                    if i == 0:
+                        # for the first face, check which way to move
+                        if len(layer) > 1 and (all(face.contour_points[0] == layer[1].contour_points[0]) or all(face.contour_points[0] == layer[1].contour_points[1])):
+                            start_pt = face.contour_points[1]
+                            next_pt = face.contour_points[0]
+                        else:
+                            start_pt = face.contour_points[0]
+                            next_pt = face.contour_points[1]
+
+                        g.abs_move(*start_pt, rapid=True, F=feedrate)
+                        last_pt = start_pt
                     else:
-                        start_pt = face.contour_points[0]
-                        next_pt = face.contour_points[1]
+                        # for the rest of the way just go to the contour pt that isn't the same as the last
+                        next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
 
-                    g.abs_move(*start_pt, rapid=True, F=feedrate)
-                    last_pt = start_pt
-                else:
-                    # for the rest of the way just go to the contour pt that isn't the same as the last
-                    next_pt = face.contour_points[1 if all(face.contour_points[0] == last_pt) else 0]
+                    # calculate how much to extrude
+                    distance = distance_between(next_pt, last_pt)
+                    total_distance += distance
+                    extrusion_amount = extrusion_rate*distance
 
-                # calculate how much to extrude
-                distance = distance_between(next_pt, last_pt)
+                    # move the cursor
+                    g.abs_move(*next_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
+                    total_extruded += extrusion_amount
+                    last_pt = next_pt
+
+                # connect back to the start
+                distance = distance_between(start_pt, last_pt)
                 total_distance += distance
                 extrusion_amount = extrusion_rate*distance
-
-                # move the cursor
-                g.abs_move(*next_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
+                g.abs_move(*start_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
                 total_extruded += extrusion_amount
-                last_pt = next_pt
-
-            # connect back to the start
-            distance = distance_between(start_pt, last_pt)
-            total_distance += distance
-            extrusion_amount = extrusion_rate*distance
-            g.abs_move(*start_pt, F=feedrate_writing, E=total_extruded+extrusion_amount)
-            total_extruded += extrusion_amount
 
             # Add infill
             # TODO: check if the layer above is smaller and add infill
@@ -361,10 +361,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, sav
         logger.info(f"Estimated filament used: {total_extruded}mm")
         # logger.info(f"Total volume: {}mm^3")
 
-        # View output slices
-    if save_image:
-        g.view('matplotlib')
-        plt.show(block=True)
-        # plt.savefig('img.jpg')
+    # View output slices
+    if plot_slices:
+        g.plot3d()
 
     return g
