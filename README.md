@@ -1,3 +1,5 @@
+![sliceofpy output plots](./sliceofpy_header.jpg)
+
 # sliceofpy: 3D Object Slicing
 
 [![Build Status](https://travis-ci.org/ttumiel/sliceofpy.svg?branch=master)](https://travis-ci.org/ttumiel/sliceofpy)
