@@ -36,7 +36,7 @@ def cli():
     p.add_argument(
         "--plot_slices",
         action="store_true",
-        help="Save an image of the final extrusion path to out.jpg",
+        help="Plot an image of the final extrusion path.",
     )
     p.add_argument(
         "--feedrate",

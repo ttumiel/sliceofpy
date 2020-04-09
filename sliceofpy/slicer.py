@@ -240,8 +240,8 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, plo
     scale (float)
         Scale the entire model by a constant factor.
         Default: 1
-    save_image (bool)
-        Save an image of the nozzle path that will be executed.
+    plot_slices (bool)
+        Plot an image of the nozzle path that will be executed.
         Default: False
     feedrate (float)
         The maximum speed at which the printer head should move.
@@ -364,5 +364,6 @@ def generate_gcode(filename, outfile="out.gcode", layer_height=0.2, scale=1, plo
     # View output slices
     if plot_slices:
         g.plot3d()
+        # g.plot2d()
 
     return g
